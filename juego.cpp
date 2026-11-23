@@ -1,106 +1,93 @@
 #include <iostream>
-#include <SDL2/SDL.h>
+#include <SDL3/SDL.h>
 
-int main(int argc, char *argv[]){
-	SDL_Window *window = nullptr;
-	SDL_Surface *surface = nullptr;
-	SDL_Surface *imageSurface = nullptr;
-	SDL_Renderer* renderer = nullptr;
-    SDL_Texture* spriteTexture = nullptr;
+#include "Snake.h"
 
-	float spriteSpeed = 200.0f;
+int main() {
+    SDL_Window* window = nullptr;
+    SDL_Renderer* renderer = nullptr;
+    SDL_Texture* backgroundTexture = nullptr;
+    SDL_Surface* backgroundSurface = nullptr;
 
-	float speedSenseX = 0;
-	float speedSenseY = 0;
+    if (!SDL_Init(SDL_INIT_VIDEO)) {
+        SDL_Log("Video initialization error: %s", SDL_GetError());
+        return 1;
+    }
 
-	bool running = true;
+    if (!SDL_CreateWindowAndRenderer(
+            "Snake", 800, 600, 0, &window, &renderer)) {
+        SDL_Log("Failed to create window and renderer: %s", SDL_GetError());
+        SDL_Quit();
+        return 1;
+    }
 
+    backgroundSurface = SDL_LoadBMP("fondo.bmp");
+    if (!backgroundSurface) {
+        SDL_Log("Image surface loading error: %s", SDL_GetError());
+    } else {
+        backgroundTexture =
+            SDL_CreateTextureFromSurface(renderer, backgroundSurface);
+        SDL_DestroySurface(backgroundSurface);
 
+        if (!backgroundTexture) {
+            SDL_Log("Sprite texture creation error: %s", SDL_GetError());
+        }
+    }
 
-	if(SDL_Init(SDL_INIT_VIDEO)<0)
-		SDL_Log("Video Initialization Error: %s", SDL_GetError());
-	
-	if(!SDL_CreateWindowAndRenderer( 800, 600, 0, &window, &renderer))
-		SDL_Log("Failed to create window and renderer! %s", SDL_GetError());
+    Snake snake{SDL_FRect{100.0f, 100.0f, 50.0f, 50.0f}};
+    constexpr float spriteSpeed = 200.0f;
+    bool running = true;
+    Uint64 lastTime = SDL_GetPerformanceCounter();
 
-	
-		// Window created
-		surface = SDL_GetWindowSurface(window);
-		imageSurface = SDL_LoadBMP("fondo.bmp");
-		spriteTexture = SDL_CreateTextureFromSurface(renderer, imageSurface);
+    while (running) {
+        SDL_Event event;
+        while (SDL_PollEvent(&event)) {
+            if (event.type == SDL_EVENT_QUIT) {
+                running = false;
+            }
+        }
 
-		if (!imageSurface)
-			SDL_Log("Image surface loading error: %s", SDL_GetError());
+        const Uint64 currentTime = SDL_GetPerformanceCounter();
+        const float deltaTime =
+            static_cast<float>(currentTime - lastTime) /
+            static_cast<float>(SDL_GetPerformanceFrequency());
+        lastTime = currentTime;
 
-		if(!spriteTexture) 
-			SDL_Log("Sprite texture creation error: %s", SDL_GetError());
+        int keyCount = 0;
+        const bool* keyState = SDL_GetKeyboardState(&keyCount);
 
+        if (keyCount > SDL_SCANCODE_W && keyState[SDL_SCANCODE_W]) {
+            snake.Move(0.0f, -spriteSpeed * deltaTime);
+        }
+        if (keyCount > SDL_SCANCODE_S && keyState[SDL_SCANCODE_S]) {
+            snake.Move(0.0f, spriteSpeed * deltaTime);
+        }
+        if (keyCount > SDL_SCANCODE_A && keyState[SDL_SCANCODE_A]) {
+            snake.Move(-spriteSpeed * deltaTime, 0.0f);
+        }
+        if (keyCount > SDL_SCANCODE_D && keyState[SDL_SCANCODE_D]) {
+            snake.Move(spriteSpeed * deltaTime, 0.0f);
+        }
+        snake.KeepInsideWindow(800.0f, 600.0f);
 
-			SDL_BlitSurface(imageSurface, NULL, surface, NULL);
-			SDL_UpdateWindowSurface(window);
+        SDL_SetRenderDrawColor(renderer, 30, 30, 30, 255);
+        SDL_RenderClear(renderer);
 
-			SDL_FRect spriteRect = {
-				100.0f,
-				100.0f,
-				static_cast<float>(imageSurface->w),
-				static_cast<float>(imageSurface->h)
-			};
+        if (backgroundTexture) {
+            SDL_RenderTexture(renderer, backgroundTexture, nullptr, nullptr);
+        }
 
-			Uint64 lastTime = SDL_GetPerformanceCounter();
+        snake.Render(renderer);
+        SDL_RenderPresent(renderer);
+        SDL_Delay(16);
+    }
 
-			while(running) {
-				SDL_Event event;
-				while (SDL_PollEvent(&event)) {
-					if(event.type == SDL_QUIT) {
-						running = false;
-					}
-				}
+    if (backgroundTexture) {
+        SDL_DestroyTexture(backgroundTexture);
+    }
+    SDL_DestroyRenderer(renderer);
+    SDL_DestroyWindow(window);
+    SDL_Quit();
 
-				Uint64 currentTime = SDL_GetPerformanceCounter();
-				float deltaTime = (currentTime - lastTime) / (float)SDL_GetPerformanceFrequency();
-
-				const Uint8* keyState = SDL_GetKeyboardState(nullptr);
-
-				if(keyState[SDL_SCANCODE_W]) {
-					spriteRect.y -= spriteSpeed * deltaTime;
-				}
-				if(keyState[SDL_SCANCODE_S]) {
-					spriteRect.y += spriteSpeed * deltaTime;
-				}
-				if(keyState[SDL_SCANCODE_A]) {
-					spriteRect.x -= spriteSpeed * deltaTime;
-				}
-				if(keyState[SDL_SCANCODE_D]) {
-					spriteRect.x += spriteSpeed * deltaTime;
-				}
-
-				if(spriteRect.x < 0.0f) spriteRect.x = 0.0f;
-				if(spriteRect.y < 0.0f) spriteRect.y = 0.0f;
-				if(spriteRect.x + spriteRect.w > 800.0f) spriteRect.x = 800.0f - spriteRect.w;
-				if(spriteRect.y + spriteRect.h > 600.0f) spriteRect.y = 600.0f - spriteRect.h;
-
-				SDL_SetRenderDrawColor(renderer, 30, 30, 30, 255);
-				SDL_RenderClear(renderer);
-
-				SDL_RenderCopyF(renderer, spriteTexture, nullptr, &spriteRect);
-
-				SDL_RenderPresent(renderer);
-
-			
-
-
-			SDL_Delay(2000);
-			
-		
-	}
-
-
-	SDL_FreeSurface(imageSurface);
-	imageSurface = nullptr;
-	SDL_DestroyWindow(window);
-	window = nullptr;
-	surface = nullptr;
-	SDL_Quit();
-
-	return 0;
+    return 0;
 }
