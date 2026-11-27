@@ -15,7 +15,7 @@ int main() {
     }
 
     if (!SDL_CreateWindowAndRenderer(
-            "Snake", 800, 600, 0, &window, &renderer)) {
+            "Snake Game", 800, 600, 0, &window, &renderer)) {
         SDL_Log("Failed to create window and renderer: %s", SDL_GetError());
         SDL_Quit();
         return 1;
@@ -34,7 +34,8 @@ int main() {
         }
     }
 
-    Snake snake{SDL_FRect{100.0f, 100.0f, 50.0f, 50.0f}};
+
+    Snake snake{renderer, SDL_FRect{100.0f, 100.0f, 50.0f, 50.0f}};
     constexpr float spriteSpeed = 200.0f;
     bool running = true;
     Uint64 lastTime = SDL_GetPerformanceCounter();
@@ -82,9 +83,9 @@ int main() {
         SDL_Delay(16);
     }
 
-    if (backgroundTexture) {
-        SDL_DestroyTexture(backgroundTexture);
-    }
+    if (backgroundTexture) SDL_DestroyTexture(backgroundTexture);
+    SDL_DestroyRenderer(renderer);
+
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
     SDL_Quit();
