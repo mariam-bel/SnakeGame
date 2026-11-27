@@ -2,6 +2,7 @@
 #include <SDL3/SDL.h>
 
 #include "Snake.h"
+#include "Apple.h"
 
 int main() {
     SDL_Window* window = nullptr;
@@ -36,6 +37,7 @@ int main() {
 
 
     Snake snake{renderer, SDL_FRect{100.0f, 100.0f, 50.0f, 50.0f}};
+    Apple apple{renderer, SDL_FRect{200.0f, 200.0f, 50.0f, 50.0f}};
     constexpr float spriteSpeed = 200.0f;
     bool running = true;
     Uint64 lastTime = SDL_GetPerformanceCounter();
@@ -71,6 +73,14 @@ int main() {
         }
         snake.KeepInsideWindow(800.0f, 600.0f);
 
+        float posX = snake.GetX();
+        float posY = snake.GetY();
+        
+        apple.Move(posX, posY);
+        apple.KeepInsideWindow(800.0f, 600.0f);
+        
+
+
         SDL_SetRenderDrawColor(renderer, 30, 30, 30, 255);
         SDL_RenderClear(renderer);
 
@@ -79,6 +89,7 @@ int main() {
         }
 
         snake.Render(renderer);
+        apple.Render(renderer);
         SDL_RenderPresent(renderer);
         SDL_Delay(16);
     }

@@ -21,6 +21,9 @@ public:
     Snake(const Snake&) = delete;
     Snake& operator=(const Snake&) = delete;
 
+    float GetX() const { return rect.x; }
+    float GetY() const { return rect.y; }
+
     void Move(float deltaX, float deltaY) {
         rect.x += deltaX;
         rect.y += deltaY;
